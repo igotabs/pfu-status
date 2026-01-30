@@ -1,0 +1,10 @@
+{
+  "name": "pfu-checker",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "serve public"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.0"
+  }
+}

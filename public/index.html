@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Перевірка ПФУ</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        h2 { margin-top: 0; color: #333; }
+        input {
+            width: 100%;
+            padding: 15px;
+            margin: 20px 0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 18px;
+            box-sizing: border-box;
+        }
+        input:focus { border-color: #007bff; outline: none; }
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:active { background-color: #0056b3; }
+        button:disabled { background-color: #ccc; }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            min-height: 20px;
+            word-wrap: break-word;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .loading { color: #666; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Перевірка ПП</h2>
+    <input type="text" id="ppNum" placeholder="Введіть номер посвідчення" inputmode="numeric">
+    <button onclick="checkStatus()" id="btnSubmit">Перевірити</button>
+    <div id="result"></div>
+</div>
+
+<script>
+    async function checkStatus() {
+        const input = document.getElementById('ppNum');
+        const resultDiv = document.getElementById('result');
+        const btn = document.getElementById('btnSubmit');
+        const num = input.value.trim();
+
+        if (!num) {
+            alert("Будь ласка, введіть номер");
+            return;
+        }
+
+        // UI updates
+        btn.disabled = true;
+        btn.innerText = "Завантаження...";
+        resultDiv.className = '';
+        resultDiv.innerText = '';
+
+        try {
+            // Відправляємо запит на НАШ сервер (api/check.js), а не напряму в ПФУ
+            const response = await fetch('/api/check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ppNum: num })
+            });
+
+            const data = await response.json();
+
+            // Виводимо тільки PpStatus, як ви просили
+            if (data.PpStatus) {
+                resultDiv.innerText = data.PpStatus;
+                resultDiv.className = 'success';
+            } else {
+                resultDiv.innerText = "Невідома відповідь від серверу";
+                resultDiv.className = 'error';
+            }
+
+        } catch (error) {
+            resultDiv.innerText = "Помилка запиту. Перевірте інтернет.";
+            resultDiv.className = 'error';
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Перевірити";
+        }
+    }
+</script>
+
+</body>
+</html>
