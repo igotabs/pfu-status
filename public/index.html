@@ -34,6 +34,7 @@
             border-radius: 8px;
             font-size: 18px;
             box-sizing: border-box;
+            text-transform: uppercase; /* Візуально робить літери великими */
         }
         input:focus { border-color: #007bff; outline: none; }
         button {
@@ -57,6 +58,7 @@
             font-size: 16px;
             min-height: 20px;
             word-wrap: break-word;
+            white-space: pre-line; /* Дозволяє перенесення рядків у повідомленні про помилку */
         }
         .success { background-color: #d4edda; color: #155724; }
         .error { background-color: #f8d7da; color: #721c24; }
@@ -67,7 +69,7 @@
 
 <div class="card">
     <h2>Перевірка ПП</h2>
-    <input type="text" id="ppNum" placeholder="Введіть номер посвідчення" inputmode="numeric">
+    <input type="text" id="ppNum" placeholder="Наприклад: БКХХ111111 або П123456789">
     <button onclick="checkStatus()" id="btnSubmit">Перевірити</button>
     <div id="result"></div>
 </div>
@@ -77,12 +79,28 @@
         const input = document.getElementById('ppNum');
         const resultDiv = document.getElementById('result');
         const btn = document.getElementById('btnSubmit');
-        const num = input.value.trim();
+        
+        // Очищаємо від зайвих пробілів і примусово переводимо у великі літери
+        const num = input.value.trim().toUpperCase();
 
         if (!num) {
             alert("Будь ласка, введіть номер");
             return;
         }
+
+        // --- ВАЛІДАЦІЯ ФОРМАТУ ---
+        // Пояснення Regex:
+        // ^\d{10}$ - рівно 10 цифр
+        // ^БК[А-ЯІЇЄҐ]{2}\d{6}$ - букви "БК" + 2 українські букви + 6 цифр
+        // ^П\d{9}$ - буква "П" + 9 цифр
+        const validationRegex = /^(\d{10}|БК[А-ЯІЇЄҐ]{2}\d{6}|П\d{9})$/;
+
+        if (!validationRegex.test(num)) {
+            resultDiv.className = 'error';
+            resultDiv.innerText = "Невірний формат!\nДозволені варіанти:\n• 10 цифр\n• БК + 2 літери серії + 6 цифр (Приклад: БКХХ111111)\n• П + 9 цифр (Приклад: П123456789)";
+            return; // Зупиняємо виконання, запит на сервер не йде
+        }
+        // --------------------------
 
         // UI updates
         btn.disabled = true;
@@ -91,16 +109,15 @@
         resultDiv.innerText = '';
 
         try {
-            // Відправляємо запит на НАШ сервер (api/check.js), а не напряму в ПФУ
             const response = await fetch('/api/check', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ppNum: num })
+                // Відправляємо вже оброблений номер (великі літери, без пробілів)
+                body: JSON.stringify({ ppNum: num }) 
             });
 
             const data = await response.json();
 
-            // Виводимо тільки PpStatus, як ви просили
             if (data.PpStatus) {
                 resultDiv.innerText = data.PpStatus;
                 resultDiv.className = 'success';
